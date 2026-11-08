@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import re
 from abc import ABC, abstractmethod
@@ -61,7 +63,7 @@ class PyArg(ABC, argparse.ArgumentParser):
 
     # Special methods.
     def __init__(
-        self, name: str, description: str | None = None, parents: Iterable["PyArg"] | None = None, **kwargs: Any
+        self, name: str, description: str | None = None, parents: Iterable[PyArg] | None = None, **kwargs: Any
     ) -> None:
         # Remove parameters.
         for to_remove in ("prog", "description", "parents", "conflict_handler"):
@@ -97,7 +99,7 @@ class PyArg(ABC, argparse.ArgumentParser):
 
     # Methods.
     def add_command_parser(
-        self, parser: "PyArg", description: str | None = None, script_entrypoint: Callable[..., Any] | None = None
+        self, parser: PyArg, description: str | None = None, script_entrypoint: Callable[..., Any] | None = None
     ) -> None:
         """Add an extra parser to a parent **PyArg** class to be called by `name`."""
         if self.__subparser is None:
