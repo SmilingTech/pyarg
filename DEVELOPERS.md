@@ -15,12 +15,15 @@ $ make setup-local-development  # Install all development requirements.
     ᒪ workflows/
         ᒪ ...   # YAML files to be executed in GitHub workflows.
 pyarg/  # Main library directory.
+tests/  # Unit tests (pytest).
 hooks/
     ᒪ ...   # Python scripts to be used as hooks in pre-commit.
 .gitignore   # File with all files and folders to be ignored by Git.
 .pre-commit-config.yaml   # Configuration file to set up local hooks for pre-commit.
 .releaserc.json   # Plugins needed for generate the Release Notes.
+CHANGELOG.md   # Generated automatically by semantic-release.
 DEVELOPERS.md   # Documentation for developers.
+LICENSE   # MIT license.
 Makefile   # Used to define keywords to execute long commands.
 pyproject.toml   # Main Python configuration file.
 README.md   # Main project documentation.
@@ -29,7 +32,7 @@ README.md   # Main project documentation.
 ### Conventional Commit Message.
 All projects in this organizations must to use the conventional commit message format based on the following pattern:
 ```
-^(feat|fix|docs|styles|refactor|test|chore|revert|ci|build|perf): .+$
+^(feat|fix|docs|style|refactor|test|chore|revert|ci|build|perf): .+$
 ```
 |Type|Description|
 |-|-|

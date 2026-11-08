@@ -24,7 +24,7 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Install semantic-release
         run: npm install -g semantic-release @semantic-release/git @semantic-release/changelog
       - name: Release
