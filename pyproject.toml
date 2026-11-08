@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 # Project metadata.
 [project]
-name = "template"
+name = "pyarg"
 readme = "README.md"
 authors = []
 dynamic = ["version"]
@@ -18,7 +18,7 @@ development = [
 ]
 
 [tool.setuptools]
-packages = []
+packages = ["pyarg"]
 
 # Version comes from the git tag created by semantic-release.
 [tool.setuptools_scm]
