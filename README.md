@@ -8,16 +8,8 @@ command, without rewriting the arguments.
 ## Installation
 
 ```bash
-pip install .
+pip install py-arguments
 ```
-
-For development (changes apply without reinstalling):
-
-```bash
-pip install -e .
-```
-
-Requires Python 3.10+ and has no dependencies.
 
 ## Quick start
 
