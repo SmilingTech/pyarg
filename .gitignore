@@ -7,44 +7,16 @@ dist/
 build/
 *.egg-info/
 
-# Node.
-node_modules/
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-pnpm-debug.log*
-lerna-debug.log*
-*.log
-logs
-
-# Vite.
-dist-ssr
-*.local
-
-# Expo / React Native.
-.expo/
-web-build/
-expo-env.d.ts
-.metro-health-check*
-
-# Native (iOS/Android).
-.kotlin/
-/ios
-/android
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
-
-# TypeScript.
-*.tsbuildinfo
-
 # Environment.
 *.env*
 *.venv*
 env/
 venv/
+
+# Tests.
+.pytest_cache/
+.coverage
+htmlcov/
 
 # Ruff.
 .ruff_cache/
@@ -56,6 +28,9 @@ venv/
 .idea/
 .vscode/
 
-# macOS.
+# OS.
 .DS_Store
+
+# Secrets.
 *.pem
+*.key
