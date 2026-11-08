@@ -20,7 +20,7 @@ class CommitTypeEmoji(Enum):
     FEAT = "🔥"
     FIX = "🐛"
     DOCS = "📝"
-    STYLES = "💄"
+    STYLE = "💄"
     REFACTOR = "✨"
     TEST = "🔍"
     CHORE = "⚙️"
