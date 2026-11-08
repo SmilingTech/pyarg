@@ -1,0 +1,61 @@
+# Python.
+*.pyc
+__pycache__/
+
+# Distribution / packaging.
+dist/
+build/
+*.egg-info/
+
+# Node.
+node_modules/
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+pnpm-debug.log*
+lerna-debug.log*
+*.log
+logs
+
+# Vite.
+dist-ssr
+*.local
+
+# Expo / React Native.
+.expo/
+web-build/
+expo-env.d.ts
+.metro-health-check*
+
+# Native (iOS/Android).
+.kotlin/
+/ios
+/android
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# TypeScript.
+*.tsbuildinfo
+
+# Environment.
+*.env*
+*.venv*
+env/
+venv/
+
+# Ruff.
+.ruff_cache/
+
+# MyPy.
+.mypy_cache/
+
+# IDEs and code editors.
+.idea/
+.vscode/
+
+# macOS.
+.DS_Store
+*.pem

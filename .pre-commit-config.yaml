@@ -1,0 +1,79 @@
+default_install_hook_types: [pre-commit, commit-msg]
+default_stages: [pre-commit]
+repos:
+# Overall hooks.
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+    -   id: check-added-large-files
+        name: Check for Large Files
+        args: [--maxkb=512]
+    -   id: check-illegal-windows-names
+        name: Check for Illegal Windows Names
+    -   id: check-json
+        name: Check JSON Files
+    -   id: check-symlinks
+        name: Check for Symlinks
+    -   id: check-toml
+        name: Check TOML Files
+    -   id: check-xml
+        name: Check XML Files
+    -   id: check-yaml
+        name: Check YAML Files
+        args: [--allow-multiple-documents]
+    -   id: detect-private-key
+        name: Detect Private Keys
+    -   id: end-of-file-fixer
+        name: Fix End of Files
+    -   id: name-tests-test
+        name: Ensure Test Files Start with "test"
+        args: [--pytest-test-first]
+    -   id: no-commit-to-branch
+        name: Prevent Commit to `main` and `develop` Branch
+        args: [--branch=main, --branch=develop]
+    -   id: pretty-format-json
+        name: Pretty Format JSON Files
+        args: [--autofix, --indent=4]
+    -   id: requirements-txt-fixer
+        name: Fix Requirements.txt Files
+    -   id: trailing-whitespace
+        name: Trim Trailing Whitespace
+-   repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.4.0
+    hooks:
+    -   id: conventional-pre-commit
+        name: Conventional Commit Message Validator
+        stages: [commit-msg]
+        args: [feat, fix, docs, style, refactor, test, chore, revert, ci, build, perf]
+-   repo: local
+    hooks:
+    -   id: format-commit-message
+        name: Format Commit Message
+        language: python
+        stages: [commit-msg]
+        entry: python3 hooks/format_commit_message.py
+        additional_dependencies: [conventional-pre-commit==4.4.0]  # Same version as hook.
+# Python hooks.
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.16
+    hooks:
+    -   id: ruff-check
+        name: Lint Python Files
+        args: [--fix]
+    -   id: ruff-format
+        name: Format Python Files
+-   repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v2.1.0
+    hooks:
+    -   id: mypy
+        name: Static Python Type Checker
+        additional_dependencies: [pydantic==2.13.5]  # Add additional mypy plugins for type validation if needed.
+        args: [--config-file=pyproject.toml]
+# Node hooks.
+-   repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v4.0.0-alpha.8
+    hooks:
+    -   id: prettier
+        name: Format JS and CSS Files
+        files: \.(js|jsx|ts|tsx|css|html)$
+        args: [--write]

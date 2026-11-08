@@ -1,0 +1,55 @@
+# Build system.
+[build-system]
+requires = ["setuptools>=64", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
+# Project metadata.
+[project]
+name = "template"
+readme = "README.md"
+authors = []
+dynamic = ["version"]
+dependencies = []
+
+# Dependencies.
+[project.optional-dependencies]
+development = [
+    "pre-commit"
+]
+
+[tool.setuptools]
+packages = []
+
+# Version comes from the git tag created by semantic-release.
+[tool.setuptools_scm]
+
+# Ruff.
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "E",  # All pycodestyle errors
+    "F",   # Pyflakes
+    "I",  # All isort errors
+    "B",  # All flake8-bugbear errors
+    "C4",  # flake8-comprehensions
+    "UP",  # All pyupgrade errors
+    "SIM", # flake8-simplify
+]
+ignore = ["B008"]  # Valid for FastAPI `Depends` call.
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+# Mypy.
+[tool.mypy]
+mypy_path = "."
+strict = true
+ignore_missing_imports = true
+explicit_package_bases = true
+disallow_untyped_decorators = false
+disallow_subclassing_any = false
+plugins = ["pydantic.mypy"]
