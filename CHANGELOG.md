@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/SmilingTech/pyarg/compare/v1.0.0...v1.0.1) (2026-11-08)
+
+
+### Bug Fixes
+
+* Accept manual publish via UI. ([1396176](https://github.com/SmilingTech/pyarg/commit/139617633f7d533aaad4923a5016af80c2a9a651))
+
 # 1.0.0 (2026-11-08)
 
 
