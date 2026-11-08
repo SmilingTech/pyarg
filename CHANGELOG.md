@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/SmilingTech/pyarg/compare/v1.0.1...v1.0.2) (2026-11-08)
+
+
+### Bug Fixes
+
+* Add missing description to library. ([01bc7b6](https://github.com/SmilingTech/pyarg/commit/01bc7b6c081f6cb88cc913f0382bf93f59668cf1))
+
 ## [1.0.1](https://github.com/SmilingTech/pyarg/compare/v1.0.0...v1.0.1) (2026-11-08)
 
 
