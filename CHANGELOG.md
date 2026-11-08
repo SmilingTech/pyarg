@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/SmilingTech/pyarg/compare/v1.2.0...v1.2.1) (2026-11-08)
+
+
+### Bug Fixes
+
+* Fix type name of the styles commit. ([3bb0303](https://github.com/SmilingTech/pyarg/commit/3bb03033a422e5f5fb57f12a8e3c9341035a71b7))
+
 # [1.2.0](https://github.com/SmilingTech/pyarg/compare/v1.1.0...v1.2.0) (2026-11-08)
 
 
