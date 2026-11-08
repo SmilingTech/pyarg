@@ -1,3 +1,15 @@
+# [1.1.0](https://github.com/SmilingTech/pyarg/compare/v1.0.2...v1.1.0) (2026-11-08)
+
+
+### Bug Fixes
+
+* Run unittest inside of a virtual environment. ([413e129](https://github.com/SmilingTech/pyarg/commit/413e1290a40f459fd5feb66f0f29556036b62dee))
+
+
+### Features
+
+* Include __future__ annotations to allow old python versions. ([02002e0](https://github.com/SmilingTech/pyarg/commit/02002e04ffe9684056fba9c61836588df6812127))
+
 ## [1.0.2](https://github.com/SmilingTech/pyarg/compare/v1.0.1...v1.0.2) (2026-11-08)
 
 
