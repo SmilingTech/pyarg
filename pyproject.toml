@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 # Project metadata.
 [project]
 name = "py-arguments"
+description = "Build CLIs with reusable argparse parser classes."
 readme = "README.md"
 authors = []
 dynamic = ["version"]
