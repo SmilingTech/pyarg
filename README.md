@@ -104,7 +104,7 @@ Use `add_help=False` on the parent parser so the `-h` option is not registered t
 
 ## API
 
-### `PyArg(name, description=None, parents=[], **kwargs)`
+### `PyArg(name, description=None, parents=None, **kwargs)`
 
 Abstract class. It cannot be instantiated directly, you must inherit from it and implement `setup_arguments`.
 
