@@ -1,3 +1,15 @@
+# [1.2.0](https://github.com/SmilingTech/pyarg/compare/v1.1.0...v1.2.0) (2026-11-08)
+
+
+### Bug Fixes
+
+* Fix name of one of the types of commits. ([2940587](https://github.com/SmilingTech/pyarg/commit/2940587e6719d10c936f5eca7fc00c969324ab9b))
+
+
+### Features
+
+* Add py.pyted file to specify that the lib is typed. ([80d234b](https://github.com/SmilingTech/pyarg/commit/80d234bb8ad245b54689038389065a350ec76799))
+
 # [1.1.0](https://github.com/SmilingTech/pyarg/compare/v1.0.2...v1.1.0) (2026-11-08)
 
 
