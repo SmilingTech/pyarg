@@ -14,10 +14,7 @@ $ make setup-local-development  # Install all development requirements.
 .github/
     ᒪ workflows/
         ᒪ ...   # YAML files to be executed in GitHub workflows.
-application/
-    ᒪ backend/   # Folder to develop a backend application.
-    ᒪ mobile/   # Folder to develop a mobile application
-    ᒪ web/   # Folder to develop a WEB application.
+pyarg/  # Main library directory.
 hooks/
     ᒪ ...   # Python scripts to be used as hooks in pre-commit.
 .gitignore   # File with all files and folders to be ignored by Git.
