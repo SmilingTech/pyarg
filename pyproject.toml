@@ -7,6 +7,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "py-arguments"
 description = "Build CLIs with reusable argparse parser classes."
+requires-python = ">=3.8"
 readme = "README.md"
 authors = []
 dynamic = ["version"]
@@ -15,7 +16,8 @@ dependencies = []
 # Dependencies.
 [project.optional-dependencies]
 development = [
-    "pre-commit"
+    "pre-commit",
+    "pytest"
 ]
 
 [tool.setuptools]
@@ -26,6 +28,7 @@ packages = ["pyarg"]
 
 # Ruff.
 [tool.ruff]
+target-version = "py38"
 line-length = 120
 
 [tool.ruff.lint]
@@ -47,6 +50,7 @@ line-ending = "auto"
 
 # Mypy.
 [tool.mypy]
+python_version = "3.8"
 mypy_path = "."
 strict = true
 ignore_missing_imports = true
