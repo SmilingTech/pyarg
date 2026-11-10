@@ -26,13 +26,16 @@ class Login(PyArg):
 
 
 parser = Login(name="Login")
-print(parser.get_arguments())
+output = parser.get_arguments()
+print(output.arguments)
 ```
 
 ```console
 $ python main.py -u ana -p 123
 {'username': 'ana', 'password': '123'}
 ```
+
+`get_arguments` returns a [`PyArgOutput`](#pyargoutput) with the parsed arguments and some extra information.
 
 Since `PyArg` inherits from `argparse.ArgumentParser`, everything from `argparse` still works
 (`add_argument`, `add_mutually_exclusive_group`, `type`, `nargs`, `choices`, etc.).
@@ -66,26 +69,29 @@ app = App(name="My App", description="Demo app.")
 app.add_command_parser(Login(name="Login", description="Sign in."))
 app.add_command_parser(Logout(name="Logout"), description="Sign out.")
 
-print(app.get_arguments())
+output = app.get_arguments()
+print(output.command, output.arguments)
 ```
 
 ```console
 $ python main.py login -u ana -p 123
-{'username': 'ana', 'password': '123'}
+login {'username': 'ana', 'password': '123'}
 
 $ python main.py logout --all
-{'all': True}
+logout {'all': True}
 
 $ python main.py -h
 usage: My App [-h] {login,logout} ...
 ```
 
-The command name is not part of the returned dictionary, only the arguments of the chosen command.
+The chosen command is available in `output.command`, and `output.arguments` has only the arguments of that command.
+If no command is given, `output.command` is `None`.
 
 ### Running a function per command
 
 Pass `script_entrypoint` to `add_command_parser` to call a function when its command is chosen. `get_arguments` calls it
-with the parsed arguments as keyword arguments, so the function parameters must match the parser argument names.
+with the parsed arguments as keyword arguments, so the function parameters must match the parser argument names. The
+value returned by the function is available in `output.entrypoint_output`.
 
 ```python
 class Greet(PyArg):
@@ -93,19 +99,22 @@ class Greet(PyArg):
         self.add_argument("--name", "-n", required=True)
 
 
-def greet(name: str) -> None:
+def greet(name: str) -> str:
     print(f"Hello, {name}!")
+    return name.upper()
 
 
 app = App(name="My App")
 app.add_command_parser(Greet(name="Greet"), script_entrypoint=greet)
 
-app.get_arguments()
+output = app.get_arguments()
+print(output.entrypoint_output)
 ```
 
 ```console
 $ python main.py greet -n ana
 Hello, ana!
+ANA
 ```
 
 ## Reusing arguments
@@ -155,12 +164,22 @@ Adds `parser` as a sub-command. If `description` is not set, the parser's own de
 `script_entrypoint` is a callable to run when the command is chosen. It receives the parsed arguments as keyword
 arguments. See [Running a function per command](#running-a-function-per-command).
 
-### `get_arguments() -> dict[str, Any]`
+### `get_arguments() -> PyArgOutput`
 
-Parses `sys.argv` and returns the arguments passed by the user as a dictionary, without the command name.
+Parses `sys.argv` and returns a [`PyArgOutput`](#pyargoutput) with the arguments passed by the user.
 
 If the chosen command has a `script_entrypoint`, it is called with those arguments before returning. Calling
 `get_arguments` more than once runs it more than once, and if the function exits or raises, nothing is returned.
+
+### `PyArgOutput`
+
+Dataclass returned by `get_arguments`. It can be imported with `from pyarg import PyArgOutput`.
+
+|Field|Type|Description|
+|-|-|-|
+|`arguments`|`dict[str, Any]`|Arguments passed by the user, without the command name.|
+|`command`|`str \| None`|Name of the chosen command, or `None` if no command was given.|
+|`entrypoint_output`|`Any \| None`|Value returned by the command `script_entrypoint`. It is `None` if the command has no entrypoint, or if the function returns nothing.|
 
 ## Development
 
