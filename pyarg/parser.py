@@ -116,5 +116,8 @@ class PyArg(ABC, argparse.ArgumentParser):
     def get_arguments(self) -> dict[str, Any]:
         """Get the CLI arguments."""
         args: dict[str, Any] = vars(self.parse_args())
-        args.pop("_entrypoint", None)
+        args.pop("command", None)
+        _entrypoint: Callable[..., Any] | None = args.pop("_entrypoint", None)
+        if _entrypoint:
+            _entrypoint(**args)
         return args
