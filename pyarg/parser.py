@@ -6,6 +6,8 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable
 from typing import Any
 
+from pyarg.types import PyArgOutput
+
 
 # Classes.
 class PyArg(ABC, argparse.ArgumentParser):
@@ -113,8 +115,10 @@ class PyArg(ABC, argparse.ArgumentParser):
         if script_entrypoint:
             subparser.set_defaults(_entrypoint=script_entrypoint)
 
-    def get_arguments(self) -> dict[str, Any]:
+    def get_arguments(self) -> PyArgOutput:
         """Get the CLI arguments."""
         args: dict[str, Any] = vars(self.parse_args())
-        args.pop("_entrypoint", None)
-        return args
+        command: str | None = args.pop("command", None)
+        _entrypoint: Callable[..., Any] | None = args.pop("_entrypoint", None)
+        entrypoint_output: Any | None = _entrypoint(**args) if _entrypoint else None
+        return PyArgOutput(command=command, arguments=args, entrypoint_output=entrypoint_output)
