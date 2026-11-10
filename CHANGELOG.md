@@ -1,3 +1,15 @@
+# [1.3.0](https://github.com/SmilingTech/pyarg/compare/v1.2.1...v1.3.0) (2026-11-10)
+
+
+### Bug Fixes
+
+* Trigger _entrypoint if exists after get the arguments and drop the command field. ([6901fe4](https://github.com/SmilingTech/pyarg/commit/6901fe4580253f0434adf964cb0deb37fa126d88))
+
+
+### Features
+
+* Define custom dataclass to return the output of get_arguments method. ([baab6a8](https://github.com/SmilingTech/pyarg/commit/baab6a834f1d4ce493b278a9c931a60157bfc7d1))
+
 ## [1.2.1](https://github.com/SmilingTech/pyarg/compare/v1.2.0...v1.2.1) (2026-11-08)
 
 
