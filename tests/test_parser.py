@@ -27,6 +27,17 @@ class Common(PyArg):
         self.add_argument("--verbose", "-v", action="store_true")
 
 
+class IncreaseNumber(PyArg):
+    NUMBER = 0
+
+    @classmethod
+    def increase_number(cls, number: int) -> None:
+        cls.NUMBER += number
+
+    def setup_arguments(self) -> None:
+        self.add_argument("--number", "-n", type=int)
+
+
 class App(PyArg):
     def setup_arguments(self) -> None:
         pass
@@ -42,11 +53,23 @@ def argv(monkeypatch: pytest.MonkeyPatch) -> Any:
     return _set
 
 
+@pytest.fixture(autouse=True)
+def reset_number(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(IncreaseNumber, "NUMBER", 0)
+
+
 @pytest.fixture
 def app() -> App:
     app = App(name="My App", description="Test application.")
     app.add_command_parser(Login(name="Login", description="Sign in."))
     app.add_command_parser(Logout(name="Logout"), description="Sign out.")
+    return app
+
+
+@pytest.fixture
+def app_with_entrypoint() -> App:
+    app = App(name="My App", description="Test application with entrypoint.")
+    app.add_command_parser(IncreaseNumber(name="Increase Number"), script_entrypoint=IncreaseNumber.increase_number)
     return app
 
 
@@ -101,17 +124,17 @@ def test_unknown_argument_exits(argv: Any) -> None:
 # Sub-commands.
 def test_command_login(app: App, argv: Any) -> None:
     argv("login", "-u", "ana", "-p", "123")
-    assert app.get_arguments() == {"command": "login", "username": "ana", "password": "123"}
+    assert app.get_arguments() == {"username": "ana", "password": "123"}
 
 
 def test_command_logout(app: App, argv: Any) -> None:
     argv("logout", "--all")
-    assert app.get_arguments() == {"command": "logout", "all": True}
+    assert app.get_arguments() == {"all": True}
 
 
 def test_no_command_selected(app: App, argv: Any) -> None:
     argv()
-    assert app.get_arguments() == {"command": None}
+    assert app.get_arguments() == {}
 
 
 def test_unknown_command_exits(app: App, argv: Any) -> None:
@@ -149,7 +172,7 @@ def test_entrypoint_is_not_returned(argv: Any) -> None:
     app = App(name="App")
     app.add_command_parser(Logout(name="Logout"), script_entrypoint=lambda **_: None)
     argv("logout")
-    assert app.get_arguments() == {"command": "logout", "all": False}
+    assert app.get_arguments() == {"all": False}
 
 
 # Parents.
@@ -161,3 +184,11 @@ def test_parents_reuse_arguments(argv: Any) -> None:
 
 def test_parents_with_help_do_not_conflict() -> None:
     Login(name="Login", parents=[Common(name="Common")])
+
+
+# Entrypoints.
+@pytest.mark.parametrize(argnames="number", argvalues=[5, 10, 20])
+def test_app_with_entrypoint(number: int, app_with_entrypoint: App, argv: Any) -> None:
+    argv("increase-number", "-n", str(number))
+    assert app_with_entrypoint.get_arguments() == {"number": number}
+    assert number == IncreaseNumber.NUMBER
