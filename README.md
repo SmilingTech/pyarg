@@ -71,16 +71,42 @@ print(app.get_arguments())
 
 ```console
 $ python main.py login -u ana -p 123
-{'command': 'login', 'username': 'ana', 'password': '123'}
+{'username': 'ana', 'password': '123'}
 
 $ python main.py logout --all
-{'command': 'logout', 'all': True}
+{'all': True}
 
 $ python main.py -h
 usage: My App [-h] {login,logout} ...
 ```
 
-The chosen command is available under the `command` key.
+The command name is not part of the returned dictionary, only the arguments of the chosen command.
+
+### Running a function per command
+
+Pass `script_entrypoint` to `add_command_parser` to call a function when its command is chosen. `get_arguments` calls it
+with the parsed arguments as keyword arguments, so the function parameters must match the parser argument names.
+
+```python
+class Greet(PyArg):
+    def setup_arguments(self) -> None:
+        self.add_argument("--name", "-n", required=True)
+
+
+def greet(name: str) -> None:
+    print(f"Hello, {name}!")
+
+
+app = App(name="My App")
+app.add_command_parser(Greet(name="Greet"), script_entrypoint=greet)
+
+app.get_arguments()
+```
+
+```console
+$ python main.py greet -n ana
+Hello, ana!
+```
 
 ## Reusing arguments
 
@@ -126,12 +152,15 @@ Read-only property with the command name derived from `name`.
 
 Adds `parser` as a sub-command. If `description` is not set, the parser's own description is used.
 
-`script_entrypoint` stores a callable on the command, but `get_arguments` does not call it and removes it from the
-result.
+`script_entrypoint` is a callable to run when the command is chosen. It receives the parsed arguments as keyword
+arguments. See [Running a function per command](#running-a-function-per-command).
 
 ### `get_arguments() -> dict[str, Any]`
 
-Parses `sys.argv` and returns the arguments passed by the user as a dictionary.
+Parses `sys.argv` and returns the arguments passed by the user as a dictionary, without the command name.
+
+If the chosen command has a `script_entrypoint`, it is called with those arguments before returning. Calling
+`get_arguments` more than once runs it more than once, and if the function exits or raises, nothing is returned.
 
 ## Development
 
