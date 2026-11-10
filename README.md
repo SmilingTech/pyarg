@@ -132,10 +132,8 @@ class Build(PyArg):
         self.add_argument("--target")
 
 
-build = Build(name="Build", pyarg_groups=Common(name="Common", add_help=False))
+build = Build(name="Build", pyarg_groups=Common(name="Common"))
 ```
-
-Use `add_help=False` on the parent parser so the `-h` option is not registered twice.
 
 ## API
 
