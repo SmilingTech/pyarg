@@ -119,7 +119,7 @@ ANA
 
 ## Reusing arguments
 
-Arguments from other parsers can be inherited with `parents`:
+Arguments from other parsers can be inherited with `pyarg_groups`. They'll be grouped by it own PyArg `name`:
 
 ```python
 class Common(PyArg):
