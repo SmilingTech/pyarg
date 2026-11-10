@@ -132,21 +132,21 @@ class Build(PyArg):
         self.add_argument("--target")
 
 
-build = Build(name="Build", parents=[Common(name="Common", add_help=False)])
+build = Build(name="Build", pyarg_groups=Common(name="Common", add_help=False))
 ```
 
 Use `add_help=False` on the parent parser so the `-h` option is not registered twice.
 
 ## API
 
-### `PyArg(name, description=None, parents=None, **kwargs)`
+### `PyArg(name, description=None, pyarg_groups=None, **kwargs)`
 
 Abstract class. It cannot be instantiated directly, you must inherit from it and implement `setup_arguments`.
 
 - `name`: parser name. Used as `prog` in the help text and to build the command name.
 - `description`: text shown in `-h`.
-- `parents`: other parsers whose arguments are copied into this one.
-- `**kwargs`: forwarded to `argparse.ArgumentParser`. The `prog`, `description`, `parents` and `conflict_handler`
+- `pyarg_groups`: other parsers whose arguments are grouped in this one.
+- `**kwargs`: forwarded to `argparse.ArgumentParser`. The `prog`, `description` and `conflict_handler`
   keys are ignored, as `conflict_handler` is always `"resolve"`.
 
 ### `setup_arguments(self) -> None`
