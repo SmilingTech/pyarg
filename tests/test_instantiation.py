@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Callable
+
 import pytest
 
 from pyarg import PyArg
@@ -53,3 +55,25 @@ def test_reserved_kwargs_are_ignored() -> None:
 def test_native_kwargs_are_forwarded() -> None:
     parser = Login(name="Login", add_help=False)
     assert not any(action.dest == "help" for action in parser._actions)
+
+
+def test_name_defaults_to_class_name() -> None:
+    parser = Login()
+    assert parser.name == "Login"
+    assert parser.prog == "Login"
+    assert parser.command_name == "login"
+
+
+def test_explicit_name_overrides_class_name() -> None:
+    assert Login(name="Sign In").name == "Sign In"
+
+
+def test_command_without_name_uses_class_name(argv: Callable[..., None]) -> None:
+    class App(PyArg):
+        def setup_arguments(self) -> None:
+            pass
+
+    app = App()
+    app.add_command_parser(Login())
+    argv("login", "-u", "ana")
+    assert app.get_arguments().command == "login"
