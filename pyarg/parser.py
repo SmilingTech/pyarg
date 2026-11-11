@@ -66,7 +66,7 @@ class PyArg(ABC, argparse.ArgumentParser):
     # Special methods.
     def __init__(
         self,
-        name: str,
+        name: str | None = None,
         description: str | None = None,
         pyarg_groups: PyArg | Iterable[PyArg] | None = None,
         **kwargs: Any,
@@ -74,6 +74,7 @@ class PyArg(ABC, argparse.ArgumentParser):
         # Remove parameters.
         for to_remove in ("prog", "description", "conflict_handler"):
             kwargs.pop(to_remove, None)
+        name = name if name is not None else type(self).__name__
         super().__init__(prog=name, description=description, conflict_handler="resolve", **kwargs)
 
         # Attributes.
