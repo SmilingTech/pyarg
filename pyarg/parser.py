@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import re
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Iterator
 from typing import Any
 
 from pyarg.types import PyArgOutput
@@ -79,16 +79,30 @@ class PyArg(ABC, argparse.ArgumentParser):
         # Attributes.
         self.__name: str = name.strip()
         self.__command_name: str = self.__get_program_name()
+        self.__groups: list[PyArg] = []
+        self.__commands: list[PyArg] = []
 
         # Set up extra sub parsers.
         self.__subparser: None | argparse._SubParsersAction[argparse.ArgumentParser] = None
 
         # Set up arguments.
         self.setup_arguments()
+
+        # Keep only the arguments defined by this parser (groups share `_actions`).
+        self.__own_arguments: list[argparse.Action] = [
+            action for action in self._actions if not isinstance(action, argparse._HelpAction)
+        ]
+
+        # Set up argument groups.
         if pyarg_groups:
             pyarg_groups = [pyarg_groups] if isinstance(pyarg_groups, PyArg) else pyarg_groups
             for pyarg in pyarg_groups:
-                self.__setup_group_arguments(pyarg=pyarg)
+                self.setup_group_arguments(pyarg=pyarg)
+
+    def __str__(self) -> str:
+        return (
+            f"{type(self).__name__}(name={self.name}, description={self.description}, command_name={self.command_name})"
+        )
 
     # Properties.
     @property
@@ -111,9 +125,51 @@ class PyArg(ABC, argparse.ArgumentParser):
         name = re.sub(pattern=r"\s+", repl="-", string=name)
         return name
 
-    def __setup_group_arguments(self, pyarg: PyArg) -> None:
+    def __tree_lines(self, prefix: str) -> Iterator[str]:
+        """Yield one line per child, recursing into groups and commands."""
+        children: list[argparse.Action | PyArg] = [*self.__own_arguments, *self.__groups, *self.__commands]
+        for idx, child in enumerate(children):
+            is_last: bool = idx == len(children) - 1
+            yield f"{prefix}{'└── ' if is_last else '├── '}{self.__tree_label(child)}"
+            if isinstance(child, PyArg):
+                yield from child.__tree_lines(prefix=prefix + ("    " if is_last else "│   "))
+
+    def __tree_label(self, child: argparse.Action | PyArg) -> str:
+        """Text shown for each node of the tree."""
+        if isinstance(child, PyArg):
+            kind: str = "\033[31mcommand\033[0m" if child in self.__commands else "\033[32mgroup\033[0m"
+            return f"[{kind}] {child}"
+        label: str = ", ".join(child.option_strings) or child.dest
+        if child.default and child.default != argparse.SUPPRESS:
+            label += f" ; default={child.default}"
+        if child.help and child.help != argparse.SUPPRESS:
+            label += f": {child.help}"
+        if child.required:
+            label += " (required)"
+        return label
+
+    # Methods.
+    def add_command_parser(
+        self, parser: PyArg, description: str | None = None, script_entrypoint: Callable[..., Any] | None = None
+    ) -> None:
+        """Add an extra parser to a parent **PyArg** class to be called by `name`."""
+        if self.__subparser is None:
+            self.__subparser = self.add_subparsers(
+                dest="command", parser_class=argparse.ArgumentParser, help="Available commands."
+            )
+        subparser: argparse.ArgumentParser = self.__subparser.add_parser(
+            parents=[parser], name=parser.command_name, description=description or parser.description, add_help=False
+        )
+        self.__commands.append(parser)
+
+        # Add script.
+        if script_entrypoint:
+            subparser.set_defaults(_entrypoint=script_entrypoint)
+
+    def setup_group_arguments(self, pyarg: PyArg) -> None:
         """Include extra arguments to the main PyArg as groups."""
         parser_group: argparse._ArgumentGroup = self.add_argument_group(title=pyarg.name, description=pyarg.description)
+        self.__groups.append(pyarg)
 
         # Get all mutually exclusive groups.
         mutually_exclusive: list[argparse._MutuallyExclusiveGroup] = pyarg._mutually_exclusive_groups
@@ -131,22 +187,6 @@ class PyArg(ABC, argparse.ArgumentParser):
             for action in group._group_actions:
                 new_group._add_action(action=action)
 
-    # Methods.
-    def add_command_parser(
-        self, parser: PyArg, description: str | None = None, script_entrypoint: Callable[..., Any] | None = None
-    ) -> None:
-        """Add an extra parser to a parent **PyArg** class to be called by `name`."""
-        if self.__subparser is None:
-            self.__subparser = self.add_subparsers(
-                dest="command", parser_class=argparse.ArgumentParser, help="Available commands."
-            )
-        subparser: argparse.ArgumentParser = self.__subparser.add_parser(
-            parents=[parser], name=parser.command_name, description=description or parser.description, add_help=False
-        )
-        # Add script.
-        if script_entrypoint:
-            subparser.set_defaults(_entrypoint=script_entrypoint)
-
     def get_arguments(self) -> PyArgOutput:
         """Get the CLI arguments."""
         args: dict[str, Any] = vars(self.parse_args())
@@ -154,3 +194,7 @@ class PyArg(ABC, argparse.ArgumentParser):
         _entrypoint: Callable[..., Any] | None = args.pop("_entrypoint", None)
         entrypoint_output: Any | None = _entrypoint(**args) if _entrypoint else None
         return PyArgOutput(command=command, arguments=args, entrypoint_output=entrypoint_output)
+
+    def tree(self) -> None:
+        """Return the parser structure (arguments, groups and commands) as a tree."""
+        print("\n".join([str(self), *self.__tree_lines(prefix="")]))
