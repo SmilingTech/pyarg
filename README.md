@@ -35,6 +35,8 @@ $ python main.py -u ana -p 123
 {'username': 'ana', 'password': '123'}
 ```
 
+`name` is optional. When it is not given, the class name is used, so `Login()` is the same as `Login(name="Login")`.
+
 `get_arguments` returns a [`PyArgOutput`](#pyargoutput) with the parsed arguments and some extra information.
 
 Since `PyArg` inherits from `argparse.ArgumentParser`, everything from `argparse` still works
@@ -135,18 +137,56 @@ class Build(PyArg):
 build = Build(name="Build", pyarg_groups=Common(name="Common"))
 ```
 
+## Tree view
+
+`tree()` prints the whole structure of a parser: its own arguments, the `pyarg_groups` and the commands, recursively.
+Each argument shows its default value, its `help` text and whether it is required.
+
+```python
+class Greet(PyArg):
+    def setup_arguments(self) -> None:
+        self.add_argument("--name", "-n", required=True, help="Person to greet.")
+
+
+class Common(PyArg):
+    def setup_arguments(self) -> None:
+        self.add_argument("--verbose", "-v", action="store_true")
+        self.add_argument("--target", default="local")
+
+
+class App(PyArg):
+    def setup_arguments(self) -> None:
+        self.add_argument("--run", "-r", action="store_true", help="Run it.")
+
+
+app = App(name="Application", pyarg_groups=Common(name="Common Arguments"))
+app.add_command_parser(Greet())
+app.tree()
+```
+
+```console
+App(name=Application, description=None, command_name=application)
+├── --run, -r: Run it.
+├── [group] Common(name=Common Arguments, description=None, command_name=common-arguments)
+│   ├── --verbose, -v
+│   └── --target ; default=local
+└── [command] Greet(name=Greet, description=None, command_name=greet)
+    └── --name, -n: Person to greet. (required)
+```
+
+In the terminal, `group` and `command` are colored.
+
 ## API
 
-### `PyArg(name, description=None, pyarg_groups=None, **kwargs)`
+### `PyArg(name=None, description=None, pyarg_groups=None, **kwargs)`
 
 Abstract class. It cannot be instantiated directly, you must inherit from it and implement `setup_arguments`.
 
-- `name`: parser name. Used as `prog` in the help text and to build the command name.
+- `name`: parser name. Used as `prog` in the help text and to build the command name. Defaults to the class name.
 - `description`: text shown in `-h`.
 - `pyarg_groups`: other parsers whose arguments are grouped in this one.
 - `**kwargs`: forwarded to `argparse.ArgumentParser`. The `prog`, `description` and `conflict_handler`
   keys are ignored, as `conflict_handler` is always `"resolve"`.
-
 ### `setup_arguments(self) -> None`
 
 Abstract method. Define all the arguments of the parser here. It runs at the end of `__init__`.
@@ -161,6 +201,10 @@ Adds `parser` as a sub-command. If `description` is not set, the parser's own de
 
 `script_entrypoint` is a callable to run when the command is chosen. It receives the parsed arguments as keyword
 arguments. See [Running a function per command](#running-a-function-per-command).
+
+### `tree() -> None`
+
+Prints the parser structure as a tree. See [Tree view](#tree-view).
 
 ### `get_arguments() -> PyArgOutput`
 
