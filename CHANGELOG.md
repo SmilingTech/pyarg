@@ -1,3 +1,12 @@
+# [1.4.0](https://github.com/SmilingTech/pyarg/compare/v1.3.0...v1.4.0) (2026-11-11)
+
+
+### Features
+
+* Add method to display the parser using tree structure. ([9971d32](https://github.com/SmilingTech/pyarg/commit/9971d3244104b1190c9b03e690efe297a776028d))
+* Set arguments group instead of copy arguments from another parser. ([571f514](https://github.com/SmilingTech/pyarg/commit/571f514f092b90c3fb4ac98c2ca22d5d2637b4e4))
+* Use the class name as default for parser name. ([d0519e9](https://github.com/SmilingTech/pyarg/commit/d0519e9f21ee9c5556476b10544bb01362452c2a))
+
 # [1.3.0](https://github.com/SmilingTech/pyarg/compare/v1.2.1...v1.3.0) (2026-11-10)
 
 
