@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/SmilingTech/pyarg/compare/v1.4.0...v1.5.0) (2026-11-14)
+
+
+### Features
+
+* Improve way to print the parsers and arguments. ([d57898e](https://github.com/SmilingTech/pyarg/commit/d57898e1ece0171d7f91fdd917016f56593c37f1))
+
 # [1.4.0](https://github.com/SmilingTech/pyarg/compare/v1.3.0...v1.4.0) (2026-11-11)
 
 
