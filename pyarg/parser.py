@@ -75,7 +75,6 @@ class PyArg(ABC, argparse.ArgumentParser):
         for to_remove in ("prog", "description", "conflict_handler"):
             kwargs.pop(to_remove, None)
         name = name if name is not None else type(self).__name__
-        super().__init__(prog=name, description=description, conflict_handler="resolve", **kwargs)
 
         # Attributes.
         self.__name: str = name.strip()
@@ -85,6 +84,8 @@ class PyArg(ABC, argparse.ArgumentParser):
 
         # Set up extra sub parsers.
         self.__subparser: None | argparse._SubParsersAction[argparse.ArgumentParser] = None
+
+        super().__init__(prog=self.__name, description=description, conflict_handler="resolve", **kwargs)
 
         # Set up arguments.
         self.setup_arguments()
@@ -101,9 +102,7 @@ class PyArg(ABC, argparse.ArgumentParser):
                 self.setup_group_arguments(pyarg=pyarg)
 
     def __str__(self) -> str:
-        return (
-            f"{type(self).__name__}(name={self.name}, description={self.description}, command_name={self.command_name})"
-        )
+        return f"{type(self).__name__}(name={self.name}, description={self.description})"
 
     # Properties.
     @property
@@ -126,6 +125,43 @@ class PyArg(ABC, argparse.ArgumentParser):
         name = re.sub(pattern=r"\s+", repl="-", string=name)
         return name
 
+    def __get_argument_type(self, action: argparse.Action) -> str:
+        """Best guess of which type of the current argument."""
+
+        def name(tp: Any) -> str:
+            return getattr(tp, "__name__", repr(tp))
+
+        # Actions with a fixed type.
+        if (
+            isinstance(action, (argparse._StoreTrueAction, argparse._StoreFalseAction))
+            or name(tp=type(action)) == "BooleanOptionalAction"
+        ):
+            return "bool"
+        if isinstance(action, argparse._CountAction):
+            return "int"
+        if isinstance(action, argparse._AppendConstAction):
+            return f"list[{name(type(action.const))}]"
+        if isinstance(action, argparse._StoreConstAction):
+            return name(type(action.const))
+
+        # Type explicit defined.
+        sub_type: str = "str"
+        if action.type:
+            sub_type = name(action.type)
+        elif action.choices:
+            sub_type = name(type(next(iter(action.choices))))
+        elif action.default and action.default != argparse.SUPPRESS:
+            _default: Any = action.default
+            sub_type = name(type(_default[0] if isinstance(_default, list) and _default else _default))
+
+        # Set up list of type with `nargs`.
+        is_list = (
+            isinstance(action, argparse._AppendAction)
+            or action.nargs in ("*", "+", argparse.REMAINDER)
+            or (isinstance(action.nargs, int) and action.nargs)
+        )
+        return f"list[{sub_type}]" if is_list else sub_type
+
     def __tree_lines(self, prefix: str) -> Iterator[str]:
         """Yield one line per child, recursing into groups and commands."""
         children: list[argparse.Action | PyArg] = [*self.__own_arguments, *self.__groups, *self.__commands]
@@ -138,9 +174,18 @@ class PyArg(ABC, argparse.ArgumentParser):
     def __tree_label(self, child: argparse.Action | PyArg) -> str:
         """Text shown for each node of the tree."""
         if isinstance(child, PyArg):
-            kind: str = "\033[31mcommand\033[0m" if child in self.__commands else "\033[32mgroup\033[0m"
-            return f"[{kind}] {child}"
+            is_child_command: bool = child in self.__commands
+            child_kind: str = "\033[31mcommand\033[0m" if is_child_command else "\033[32mgroup\033[0m"
+            child_view: str = (
+                f"{child.name}"
+                + (f"[$ {child.command_name}]" if is_child_command else "")
+                + (f" ({child.description})" if child.description else "")
+            )
+            return f"[{child_kind}] {child_view}"
+
+        # Display argument.
         label: str = ", ".join(child.option_strings) or child.dest
+        label += f" ; type={self.__get_argument_type(action=child)}"
         if child.default and child.default != argparse.SUPPRESS:
             label += f" ; default={child.default}"
         if child.help and child.help != argparse.SUPPRESS:
