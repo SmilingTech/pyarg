@@ -140,7 +140,11 @@ build = Build(name="Build", pyarg_groups=Common(name="Common"))
 ## Tree view
 
 `tree()` prints the whole structure of a parser: its own arguments, the `pyarg_groups` and the commands, recursively.
-Each argument shows its default value, its `help` text and whether it is required.
+Each argument shows its type, default value, `help` text and whether it is required. Groups show their `name` and
+commands show the name used to call them (`[$ greet]`), both followed by the `description` when it is set.
+
+The type is inferred from the argument: `type`, the action (`store_true` is `bool`, `count` is `int`), `choices`,
+`default` and `nargs` (`append` or `nargs="+"` give `list[...]`). When nothing tells the type, it is `str`.
 
 ```python
 class Greet(PyArg):
@@ -165,13 +169,13 @@ app.tree()
 ```
 
 ```console
-App(name=Application, description=None, command_name=application)
-├── --run, -r: Run it.
-├── [group] Common(name=Common Arguments, description=None, command_name=common-arguments)
-│   ├── --verbose, -v
-│   └── --target ; default=local
-└── [command] Greet(name=Greet, description=None, command_name=greet)
-    └── --name, -n: Person to greet. (required)
+App(name=Application, description=None)
+├── --run, -r ; type=bool: Run it.
+├── [group] Common Arguments
+│   ├── --verbose, -v ; type=bool
+│   └── --target ; type=str ; default=local
+└── [command] Greet[$ greet]
+    └── --name, -n ; type=str: Person to greet. (required)
 ```
 
 In the terminal, `group` and `command` are colored.
