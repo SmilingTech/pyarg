@@ -78,7 +78,7 @@ def test_full_structure(capsys: pytest.CaptureFixture[str]) -> None:
     assert lines[3].startswith("│   ├── --verbose")
     assert lines[6] == "│   └── [group] Greet"
     assert lines[7].startswith("│       └── --name")
-    assert lines[8] == "└── [command] Say Hi[$ say-hi]"
+    assert lines[8] == "└── [command] Say Hi [$ say-hi]"
     assert lines[9].startswith("    └── --name")
     assert len(lines) == 10
 
@@ -94,7 +94,7 @@ def test_group_and_command_description(capsys: pytest.CaptureFixture[str]) -> No
     app.add_command_parser(Greet(description="Say hello."))
     lines = render(app, capsys)
     assert "├── [group] Common (Shared options.)" in lines
-    assert "└── [command] Greet[$ greet] (Say hello.)" in lines
+    assert "└── [command] Greet [$ greet] (Say hello.)" in lines
 
 
 @pytest.mark.parametrize(
