@@ -69,8 +69,18 @@ class PyArg(ABC, argparse.ArgumentParser):
         name: str | None = None,
         description: str | None = None,
         pyarg_groups: PyArg | Iterable[PyArg] | None = None,
+        pyarg_commands: PyArg | Iterable[PyArg] | None = None,
         **kwargs: Any,
     ) -> None:
+        """
+        Args:
+            name (str): Name of the parser. If it's None, it'll use the class name. (Default: None)
+            description (str): Description of the parser. (Default: None)
+            pyarg_groups (PyArg | Iterable[PyArg]): PyArg objects to be included to this one and inherance it arguments.
+            (Default: None)
+            pyarg_commands (PyArg | Iterable[PyArg]): PyArg objects to be called with a command. (Default: None)
+            **kwargs (Any): Extra arguments for `argparse.ArgumentParser`.
+        """
         # Remove parameters.
         for to_remove in ("prog", "description", "conflict_handler"):
             kwargs.pop(to_remove, None)
@@ -81,6 +91,7 @@ class PyArg(ABC, argparse.ArgumentParser):
         self.__command_name: str = self.__get_program_name()
         self.__groups: list[PyArg] = []
         self.__commands: list[PyArg] = []
+        self.__entrypoint: Callable[..., Any] = lambda **kwargs: None
 
         # Set up extra sub parsers.
         self.__subparser: None | argparse._SubParsersAction[argparse.ArgumentParser] = None
@@ -89,17 +100,18 @@ class PyArg(ABC, argparse.ArgumentParser):
 
         # Set up arguments.
         self.setup_arguments()
+        self.add_argument(
+            "--tree", action=_TreeViewAction, pyarg=self, help="Show the parser structure as a tree and exit."
+        )
 
         # Keep only the arguments defined by this parser (groups share `_actions`).
         self.__own_arguments: list[argparse.Action] = [
-            action for action in self._actions if not isinstance(action, argparse._HelpAction)
+            action for action in self._actions if not isinstance(action, (argparse._HelpAction, _TreeViewAction))
         ]
 
-        # Set up argument groups.
-        if pyarg_groups:
-            pyarg_groups = [pyarg_groups] if isinstance(pyarg_groups, PyArg) else pyarg_groups
-            for pyarg in pyarg_groups:
-                self.setup_group_arguments(pyarg=pyarg)
+        # Set up argument groups and commands.
+        self.__setup_pyarg_childs(pyarg_list=pyarg_groups, setup_func=self.add_group_arguments)
+        self.__setup_pyarg_childs(pyarg_list=pyarg_commands, setup_func=self.add_command_parser)
 
     def __str__(self) -> str:
         return f"{type(self).__name__}(name={self.name}, description={self.description})"
@@ -113,12 +125,27 @@ class PyArg(ABC, argparse.ArgumentParser):
     def command_name(self) -> str:
         return self.__command_name
 
+    @property
+    def entrypoint(self) -> Callable[..., Any]:
+        return self.__entrypoint
+
+    @entrypoint.setter
+    def entrypoint(self, func: Callable[..., Any]) -> None:
+        self.__entrypoint = func
+
     # Abstract methods.
     @abstractmethod
     def setup_arguments(self) -> None:
         """Main method used to define all parameters of the parser."""
 
     # Private methods.
+    def __setup_pyarg_childs(self, pyarg_list: PyArg | Iterable[PyArg] | None, setup_func: Callable[..., Any]) -> None:
+        """Internal utility to set up child pyargs."""
+        if pyarg_list:
+            pyarg_list = [pyarg_list] if isinstance(pyarg_list, PyArg) else pyarg_list
+            for pyarg in pyarg_list:
+                setup_func(pyarg)
+
     def __get_program_name(self) -> str:
         """Convert the parser name to a CLI command name."""
         name = self.__name.lower()
@@ -178,7 +205,7 @@ class PyArg(ABC, argparse.ArgumentParser):
             child_kind: str = "\033[31mcommand\033[0m" if is_child_command else "\033[32mgroup\033[0m"
             child_view: str = (
                 f"{child.name}"
-                + (f"[$ {child.command_name}]" if is_child_command else "")
+                + (f" [$ {child.command_name}]" if is_child_command else "")
                 + (f" ({child.description})" if child.description else "")
             )
             return f"[{child_kind}] {child_view}"
@@ -195,24 +222,7 @@ class PyArg(ABC, argparse.ArgumentParser):
         return label
 
     # Methods.
-    def add_command_parser(
-        self, parser: PyArg, description: str | None = None, script_entrypoint: Callable[..., Any] | None = None
-    ) -> None:
-        """Add an extra parser to a parent **PyArg** class to be called by `name`."""
-        if self.__subparser is None:
-            self.__subparser = self.add_subparsers(
-                dest="command", parser_class=argparse.ArgumentParser, help="Available commands."
-            )
-        subparser: argparse.ArgumentParser = self.__subparser.add_parser(
-            parents=[parser], name=parser.command_name, description=description or parser.description, add_help=False
-        )
-        self.__commands.append(parser)
-
-        # Add script.
-        if script_entrypoint:
-            subparser.set_defaults(_entrypoint=script_entrypoint)
-
-    def setup_group_arguments(self, pyarg: PyArg) -> None:
+    def add_group_arguments(self, pyarg: PyArg) -> None:
         """Include extra arguments to the main PyArg as groups."""
         parser_group: argparse._ArgumentGroup = self.add_argument_group(title=pyarg.name, description=pyarg.description)
         self.__groups.append(pyarg)
@@ -223,7 +233,7 @@ class PyArg(ABC, argparse.ArgumentParser):
 
         # Add actions.
         for action in pyarg._actions:
-            if isinstance(action, argparse._HelpAction) or id(action) in exclusive_actions:
+            if isinstance(action, (argparse._HelpAction, _TreeViewAction)) or id(action) in exclusive_actions:
                 continue
             parser_group._add_action(action=action)
 
@@ -233,14 +243,48 @@ class PyArg(ABC, argparse.ArgumentParser):
             for action in group._group_actions:
                 new_group._add_action(action=action)
 
+    def add_command_parser(self, parser: PyArg, script_entrypoint: Callable[..., Any] | None = None) -> None:
+        """Add an extra parser to a parent **PyArg** class to be called by `name`."""
+        if self.__subparser is None:
+            self.__subparser = self.add_subparsers(
+                dest="command", parser_class=argparse.ArgumentParser, help="Available commands."
+            )
+        subparser: argparse.ArgumentParser = self.__subparser.add_parser(
+            parents=[parser], name=parser.command_name, description=parser.description, add_help=False
+        )
+        self.__commands.append(parser)
+
+        # Add script.
+        main_entrypoint: Callable[..., Any] = script_entrypoint if script_entrypoint else parser.entrypoint
+        subparser.set_defaults(_entrypoint=main_entrypoint)
+
     def get_arguments(self) -> PyArgOutput:
         """Get the CLI arguments."""
         args: dict[str, Any] = vars(self.parse_args())
         command: str | None = args.pop("command", None)
-        _entrypoint: Callable[..., Any] | None = args.pop("_entrypoint", None)
-        entrypoint_output: Any | None = _entrypoint(**args) if _entrypoint else None
+        _entrypoint: Callable[..., Any] = args.pop("_entrypoint", self.entrypoint)
+        entrypoint_output: Any | None = _entrypoint(**args)
         return PyArgOutput(command=command, arguments=args, entrypoint_output=entrypoint_output)
 
     def tree(self) -> None:
         """Return the parser structure (arguments, groups and commands) as a tree."""
         print("\n".join([str(self), *self.__tree_lines(prefix="")]))
+
+
+# Actions.
+class _TreeViewAction(argparse.Action):
+    # Special methods.
+    def __init__(self, option_strings: list[str], pyarg: PyArg, dest: str, help: str | None = None) -> None:
+        super().__init__(option_strings=option_strings, dest=dest, default=argparse.SUPPRESS, nargs=0, help=help)
+        # Attributes.
+        self.__pyarg: PyArg = pyarg
+
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: Any,
+        option_string: str | None = None,
+    ) -> None:
+        self.__pyarg.tree()
+        parser.exit()

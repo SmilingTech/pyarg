@@ -29,7 +29,7 @@ class App(PyArg):
 def app() -> App:
     app = App(name="My App", description="Test application.")
     app.add_command_parser(Login(name="Login", description="Sign in."))
-    app.add_command_parser(Logout(name="Logout"), description="Sign out.")
+    app.add_command_parser(Logout(name="Logout", description="Sign out."))
     return app
 
 
