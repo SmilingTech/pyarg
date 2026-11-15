@@ -69,7 +69,7 @@ class App(PyArg):
 
 app = App(name="My App", description="Demo app.")
 app.add_command_parser(Login(name="Login", description="Sign in."))
-app.add_command_parser(Logout(name="Logout"), description="Sign out.")
+app.add_command_parser(Logout(name="Logout", description="Sign out."))
 
 output = app.get_arguments()
 print(output.command, output.arguments)
@@ -83,7 +83,13 @@ $ python main.py logout --all
 logout {'all': True}
 
 $ python main.py -h
-usage: My App [-h] {login,logout} ...
+usage: My App [-h] [--tree] {login,logout} ...
+```
+
+Commands can also be passed when creating the parser, with `pyarg_commands`:
+
+```python
+app = App(name="My App", pyarg_commands=[Login(description="Sign in."), Logout(description="Sign out.")])
 ```
 
 The chosen command is available in `output.command`, and `output.arguments` has only the arguments of that command.
@@ -119,6 +125,18 @@ Hello, ana!
 ANA
 ```
 
+The function can also be set on the parser itself with the `entrypoint` property. It is used when the command is
+added without a `script_entrypoint`, which also works with `pyarg_commands`:
+
+```python
+greet_parser = Greet(name="Greet")
+greet_parser.entrypoint = greet
+
+app = App(name="My App", pyarg_commands=greet_parser)
+```
+
+The `entrypoint` of the main parser runs when no command is chosen.
+
 ## Reusing arguments
 
 Arguments from other parsers can be inherited with `pyarg_groups`. They'll be grouped by it own PyArg `name`:
@@ -136,6 +154,50 @@ class Build(PyArg):
 
 build = Build(name="Build", pyarg_groups=Common(name="Common"))
 ```
+
+## Decorator
+
+For small parsers, a class can be too much. The `pyarg` decorator turns a function that defines the arguments into a
+`PyArg` parser. The function receives the parser and works like `setup_arguments`:
+
+```python
+from pyarg import PyArg, pyarg
+
+
+@pyarg
+def common(parser: PyArg) -> None:
+    """Shared options."""
+    parser.add_argument("--verbose", "-v", action="store_true")
+
+
+@pyarg(description="Sign in.")
+def login(parser: PyArg) -> None:
+    parser.add_argument("--username", "-u")
+
+
+@pyarg(name="My App", pyarg_groups=common, pyarg_commands=login)
+def app(parser: PyArg) -> None:
+    parser.add_argument("--run", "-r", action="store_true")
+
+
+output = app.get_arguments()
+```
+
+```console
+$ python main.py -v login -u ana
+PyArgOutput(arguments={'run': False, 'verbose': True, 'username': 'ana'}, command='login', entrypoint_output=None)
+```
+
+The decorated name is the parser itself, not a function, so it can be used anywhere a `PyArg` is expected: in
+`pyarg_groups`, `pyarg_commands`, `add_command_parser`, with `entrypoint`, `tree()` and `--tree`. Decorated parsers and
+classes can be mixed.
+
+- The parser `name` comes from the function name, with `_` replaced by spaces and each word capitalized
+  (`make_directory` becomes `Make Directory`, and the command `make-directory`).
+- The `description` comes from the function docstring.
+- Both can be set in the decorator, together with any other `PyArg` argument (`pyarg_groups`, `pyarg_commands`,
+  `add_help`, etc.).
+- It can be used with or without parentheses: `@pyarg` or `@pyarg(...)`.
 
 ## Tree view
 
@@ -174,23 +236,35 @@ App(name=Application, description=None)
 ├── [group] Common Arguments
 │   ├── --verbose, -v ; type=bool
 │   └── --target ; type=str ; default=local
-└── [command] Greet[$ greet]
+└── [command] Greet [$ greet]
     └── --name, -n ; type=str: Person to greet. (required)
 ```
 
 In the terminal, `group` and `command` are colored.
 
+Every parser also has a `--tree` option that prints the tree and exits, like `-h`. On a command, it prints only the
+tree of that command:
+
+```console
+$ python main.py --tree
+$ python main.py greet --tree
+```
+
+The `--tree` option is not shown in the tree and is not returned in `output.arguments`.
+
 ## API
 
-### `PyArg(name=None, description=None, pyarg_groups=None, **kwargs)`
+### `PyArg(name=None, description=None, pyarg_groups=None, pyarg_commands=None, **kwargs)`
 
 Abstract class. It cannot be instantiated directly, you must inherit from it and implement `setup_arguments`.
 
 - `name`: parser name. Used as `prog` in the help text and to build the command name. Defaults to the class name.
 - `description`: text shown in `-h`.
 - `pyarg_groups`: other parsers whose arguments are grouped in this one.
+- `pyarg_commands`: other parsers added as sub-commands, the same as calling `add_command_parser` for each one.
 - `**kwargs`: forwarded to `argparse.ArgumentParser`. The `prog`, `description` and `conflict_handler`
   keys are ignored, as `conflict_handler` is always `"resolve"`.
+
 ### `setup_arguments(self) -> None`
 
 Abstract method. Define all the arguments of the parser here. It runs at the end of `__init__`.
@@ -199,23 +273,40 @@ Abstract method. Define all the arguments of the parser here. It runs at the end
 
 Read-only property with the command name derived from `name`.
 
-### `add_command_parser(parser, description=None, script_entrypoint=None)`
+### `name`
 
-Adds `parser` as a sub-command. If `description` is not set, the parser's own description is used.
+Read-only property with the parser name.
+
+### `entrypoint`
+
+Function called by `get_arguments` with the parsed arguments. When the parser is added as a command without a
+`script_entrypoint`, this one is used. By default it does nothing and returns `None`.
+
+### `add_command_parser(parser, script_entrypoint=None)`
+
+Adds `parser` as a sub-command.
 
 `script_entrypoint` is a callable to run when the command is chosen. It receives the parsed arguments as keyword
-arguments. See [Running a function per command](#running-a-function-per-command).
+arguments. If it is not set, the parser's own [`entrypoint`](#entrypoint) is used. See
+[Running a function per command](#running-a-function-per-command).
 
 ### `tree() -> None`
 
-Prints the parser structure as a tree. See [Tree view](#tree-view).
+Prints the parser structure as a tree. The same as passing `--tree` in the CLI. See [Tree view](#tree-view).
 
 ### `get_arguments() -> PyArgOutput`
 
 Parses `sys.argv` and returns a [`PyArgOutput`](#pyargoutput) with the arguments passed by the user.
 
-If the chosen command has a `script_entrypoint`, it is called with those arguments before returning. Calling
-`get_arguments` more than once runs it more than once, and if the function exits or raises, nothing is returned.
+The entrypoint of the chosen command (or of the main parser, if no command was given) is called with those arguments
+before returning. Calling `get_arguments` more than once runs it more than once, and if the function exits or raises,
+nothing is returned.
+
+### `@pyarg` / `@pyarg(name=None, description=None, **kwargs)`
+
+Decorator that creates a `PyArg` parser from a function. The function receives the parser and defines its arguments.
+`name` defaults to the function name and `description` to its docstring. Other `**kwargs` are passed to `PyArg`. See
+[Decorator](#decorator).
 
 ### `PyArgOutput`
 
@@ -225,7 +316,7 @@ Dataclass returned by `get_arguments`. It can be imported with `from pyarg impor
 |-|-|-|
 |`arguments`|`dict[str, Any]`|Arguments passed by the user, without the command name.|
 |`command`|`str \| None`|Name of the chosen command, or `None` if no command was given.|
-|`entrypoint_output`|`Any \| None`|Value returned by the command `script_entrypoint`. It is `None` if the command has no entrypoint, or if the function returns nothing.|
+|`entrypoint_output`|`Any \| None`|Value returned by the entrypoint. It is `None` if no entrypoint was set, or if the function returns nothing.|
 
 ## Development
 
