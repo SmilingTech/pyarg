@@ -155,6 +155,50 @@ class Build(PyArg):
 build = Build(name="Build", pyarg_groups=Common(name="Common"))
 ```
 
+## Decorator
+
+For small parsers, a class can be too much. The `pyarg` decorator turns a function that defines the arguments into a
+`PyArg` parser. The function receives the parser and works like `setup_arguments`:
+
+```python
+from pyarg import PyArg, pyarg
+
+
+@pyarg
+def common(parser: PyArg) -> None:
+    """Shared options."""
+    parser.add_argument("--verbose", "-v", action="store_true")
+
+
+@pyarg(description="Sign in.")
+def login(parser: PyArg) -> None:
+    parser.add_argument("--username", "-u")
+
+
+@pyarg(name="My App", pyarg_groups=common, pyarg_commands=login)
+def app(parser: PyArg) -> None:
+    parser.add_argument("--run", "-r", action="store_true")
+
+
+output = app.get_arguments()
+```
+
+```console
+$ python main.py -v login -u ana
+PyArgOutput(arguments={'run': False, 'verbose': True, 'username': 'ana'}, command='login', entrypoint_output=None)
+```
+
+The decorated name is the parser itself, not a function, so it can be used anywhere a `PyArg` is expected: in
+`pyarg_groups`, `pyarg_commands`, `add_command_parser`, with `entrypoint`, `tree()` and `--tree`. Decorated parsers and
+classes can be mixed.
+
+- The parser `name` comes from the function name, with `_` replaced by spaces and each word capitalized
+  (`make_directory` becomes `Make Directory`, and the command `make-directory`).
+- The `description` comes from the function docstring.
+- Both can be set in the decorator, together with any other `PyArg` argument (`pyarg_groups`, `pyarg_commands`,
+  `add_help`, etc.).
+- It can be used with or without parentheses: `@pyarg` or `@pyarg(...)`.
+
 ## Tree view
 
 `tree()` prints the whole structure of a parser: its own arguments, the `pyarg_groups` and the commands, recursively.
@@ -257,6 +301,12 @@ Parses `sys.argv` and returns a [`PyArgOutput`](#pyargoutput) with the arguments
 The entrypoint of the chosen command (or of the main parser, if no command was given) is called with those arguments
 before returning. Calling `get_arguments` more than once runs it more than once, and if the function exits or raises,
 nothing is returned.
+
+### `@pyarg` / `@pyarg(name=None, description=None, **kwargs)`
+
+Decorator that creates a `PyArg` parser from a function. The function receives the parser and defines its arguments.
+`name` defaults to the function name and `description` to its docstring. Other `**kwargs` are passed to `PyArg`. See
+[Decorator](#decorator).
 
 ### `PyArgOutput`
 
