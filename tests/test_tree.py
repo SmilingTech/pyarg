@@ -10,8 +10,6 @@ import pytest
 
 from pyarg import PyArg
 
-ANSI = re.compile(r"\x1b\[[0-9;]*m")
-
 
 class Greet(PyArg):
     def setup_arguments(self) -> None:
@@ -30,49 +28,49 @@ class App(PyArg):
         self.add_argument("--run", "-r", action="store_true", help="Run it.")
 
 
-def render(parser: PyArg, capsys: pytest.CaptureFixture[str]) -> list[str]:
+def render(parser: PyArg, capsys: pytest.CaptureFixture[str], ansi_re: re.Pattern[str]) -> list[str]:
     parser.tree()
-    return ANSI.sub("", capsys.readouterr().out).splitlines()
+    return ansi_re.sub("", capsys.readouterr().out).splitlines()
 
 
-def test_root_is_first_line(capsys: pytest.CaptureFixture[str]) -> None:
-    lines = render(App(name="Application"), capsys)
+def test_root_is_first_line(capsys: pytest.CaptureFixture[str], ansi_re: re.Pattern[str]) -> None:
+    lines = render(App(name="Application"), capsys, ansi_re)
     assert lines[0] == str(App(name="Application"))
 
 
-def test_parser_without_children(capsys: pytest.CaptureFixture[str]) -> None:
+def test_parser_without_children(capsys: pytest.CaptureFixture[str], ansi_re: re.Pattern[str]) -> None:
     class Empty(PyArg):
         def setup_arguments(self) -> None:
             pass
 
-    assert len(render(Empty(), capsys)) == 1
+    assert len(render(Empty(), capsys, ansi_re)) == 1
 
 
-def test_help_argument_is_hidden(capsys: pytest.CaptureFixture[str]) -> None:
-    assert not any("--help" in line for line in render(App(), capsys))
+def test_help_argument_is_hidden(capsys: pytest.CaptureFixture[str], ansi_re: re.Pattern[str]) -> None:
+    assert not any("--help" in line for line in render(App(), capsys, ansi_re))
 
 
-def test_argument_label(capsys: pytest.CaptureFixture[str]) -> None:
-    lines = render(Greet(), capsys)
+def test_argument_label(capsys: pytest.CaptureFixture[str], ansi_re: re.Pattern[str]) -> None:
+    lines = render(Greet(), capsys, ansi_re)
     assert lines[1].startswith("└── --name, -n")
     assert "Person to greet." in lines[1]
     assert "(required)" in lines[1]
 
 
-def test_default_is_shown(capsys: pytest.CaptureFixture[str]) -> None:
-    line = next(line for line in render(Common(), capsys) if "--target" in line)
+def test_default_is_shown(capsys: pytest.CaptureFixture[str], ansi_re: re.Pattern[str]) -> None:
+    line = next(line for line in render(Common(), capsys, ansi_re) if "--target" in line)
     assert "default=local" in line
 
 
-def test_suppressed_help_is_hidden(capsys: pytest.CaptureFixture[str]) -> None:
-    line = next(line for line in render(Common(), capsys) if "--secret" in line)
+def test_suppressed_help_is_hidden(capsys: pytest.CaptureFixture[str], ansi_re: re.Pattern[str]) -> None:
+    line = next(line for line in render(Common(), capsys, ansi_re) if "--secret" in line)
     assert line.endswith("--secret ; type=str")
 
 
-def test_full_structure(capsys: pytest.CaptureFixture[str]) -> None:
+def test_full_structure(capsys: pytest.CaptureFixture[str], ansi_re: re.Pattern[str]) -> None:
     app = App(pyarg_groups=Common(pyarg_groups=Greet()))
     app.add_command_parser(Greet(name="Say Hi"))
-    lines = render(app, capsys)
+    lines = render(app, capsys, ansi_re)
     assert lines[1].startswith("├── --run, -r")
     assert lines[2] == "├── [group] Common"
     assert lines[3].startswith("│   ├── --verbose")
@@ -83,16 +81,16 @@ def test_full_structure(capsys: pytest.CaptureFixture[str]) -> None:
     assert len(lines) == 10
 
 
-def test_order_follows_definition(capsys: pytest.CaptureFixture[str]) -> None:
+def test_order_follows_definition(capsys: pytest.CaptureFixture[str], ansi_re: re.Pattern[str]) -> None:
     app = App(pyarg_groups=[Greet(), Common()])
-    text = "\n".join(render(app, capsys))
+    text = "\n".join(render(app, capsys, ansi_re))
     assert text.index("[group] Greet") < text.index("[group] Common")
 
 
-def test_group_and_command_description(capsys: pytest.CaptureFixture[str]) -> None:
+def test_group_and_command_description(capsys: pytest.CaptureFixture[str], ansi_re: re.Pattern[str]) -> None:
     app = App(pyarg_groups=Common(description="Shared options."))
     app.add_command_parser(Greet(description="Say hello."))
-    lines = render(app, capsys)
+    lines = render(app, capsys, ansi_re)
     assert "├── [group] Common (Shared options.)" in lines
     assert "└── [command] Greet [$ greet] (Say hello.)" in lines
 
@@ -119,19 +117,21 @@ def test_group_and_command_description(capsys: pytest.CaptureFixture[str]) -> No
         ({"action": "append_const", "const": "x"}, "list[str]"),
     ],
 )
-def test_argument_type(kwargs: dict[str, Any], expected: str, capsys: pytest.CaptureFixture[str]) -> None:
+def test_argument_type(
+    kwargs: dict[str, Any], expected: str, capsys: pytest.CaptureFixture[str], ansi_re: re.Pattern[str]
+) -> None:
     class One(PyArg):
         def setup_arguments(self) -> None:
             self.add_argument("--value", **kwargs)
 
-    line = render(One(), capsys)[1]
+    line = render(One(), capsys, ansi_re)[1]
     assert f"type={expected}" in line
 
 
 @pytest.mark.skipif(not hasattr(argparse, "BooleanOptionalAction"), reason="Python 3.9+")
-def test_boolean_optional_action_type(capsys: pytest.CaptureFixture[str]) -> None:
+def test_boolean_optional_action_type(capsys: pytest.CaptureFixture[str], ansi_re: re.Pattern[str]) -> None:
     class One(PyArg):
         def setup_arguments(self) -> None:
             self.add_argument("--value", action=argparse.BooleanOptionalAction)
 
-    assert "type=bool" in render(One(), capsys)[1]
+    assert "type=bool" in render(One(), capsys, ansi_re)[1]

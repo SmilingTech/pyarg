@@ -9,8 +9,6 @@ import pytest
 
 from pyarg import PyArg, pyarg
 
-ANSI = re.compile(r"\x1b\[[0-9;]*m")
-
 
 def test_without_parentheses_returns_pyarg() -> None:
     @pyarg
@@ -186,7 +184,7 @@ def test_mixed_with_class(argv: Callable[..., None]) -> None:
     assert app.get_arguments().command == "login"
 
 
-def test_tree_shows_decorated_arguments(capsys: pytest.CaptureFixture[str]) -> None:
+def test_tree_shows_decorated_arguments(capsys: pytest.CaptureFixture[str], ansi_re: re.Pattern[str]) -> None:
     @pyarg
     def login(parser: PyArg) -> None:
         """Sign in."""
@@ -197,7 +195,7 @@ def test_tree_shows_decorated_arguments(capsys: pytest.CaptureFixture[str]) -> N
         parser.add_argument("--run", "-r", action="store_true")
 
     app.tree()
-    lines = ANSI.sub("", capsys.readouterr().out).splitlines()
+    lines = ansi_re.sub("", capsys.readouterr().out).splitlines()
     assert lines[1] == "├── --run, -r ; type=bool"
     assert lines[2] == "└── [command] Login [$ login] (Sign in.)"
     assert lines[3] == "    └── --username, -u ; type=str: User."

@@ -9,8 +9,6 @@ import pytest
 
 from pyarg import PyArg
 
-ANSI = re.compile(r"\x1b\[[0-9;]*m")
-
 
 class Common(PyArg):
     def setup_arguments(self) -> None:
@@ -32,58 +30,62 @@ def app() -> App:
     return App(pyarg_groups=Common(), pyarg_commands=Login())
 
 
-def run_tree(parser: PyArg, capsys: pytest.CaptureFixture[str]) -> list[str]:
+def run_tree(parser: PyArg, capsys: pytest.CaptureFixture[str], ansi_re: re.Pattern[str]) -> list[str]:
     with pytest.raises(SystemExit) as error:
         parser.get_arguments()
     assert error.value.code == 0
-    return ANSI.sub("", capsys.readouterr().out).splitlines()
+    return ansi_re.sub("", capsys.readouterr().out).splitlines()
 
 
 def test_tree_option_prints_tree_and_exits(
-    app: App, argv: Callable[..., None], capsys: pytest.CaptureFixture[str]
+    app: App, argv: Callable[..., None], capsys: pytest.CaptureFixture[str], ansi_re: re.Pattern[str]
 ) -> None:
     argv("--tree")
-    lines = run_tree(app, capsys)
+    lines = run_tree(app, capsys, ansi_re)
     assert lines[0] == str(app)
     assert "├── [group] Common" in lines
     assert "└── [command] Login [$ login]" in lines
 
 
 def test_tree_option_matches_tree_method(
-    app: App, argv: Callable[..., None], capsys: pytest.CaptureFixture[str]
+    app: App, argv: Callable[..., None], capsys: pytest.CaptureFixture[str], ansi_re: re.Pattern[str]
 ) -> None:
     app.tree()
-    expected = ANSI.sub("", capsys.readouterr().out).splitlines()
+    expected = ansi_re.sub("", capsys.readouterr().out).splitlines()
     argv("--tree")
-    assert run_tree(app, capsys) == expected
+    assert run_tree(app, capsys, ansi_re) == expected
 
 
-def test_tree_option_on_simple_parser(argv: Callable[..., None], capsys: pytest.CaptureFixture[str]) -> None:
+def test_tree_option_on_simple_parser(
+    argv: Callable[..., None], capsys: pytest.CaptureFixture[str], ansi_re: re.Pattern[str]
+) -> None:
     argv("--tree")
-    lines = run_tree(Common(), capsys)
+    lines = run_tree(Common(), capsys, ansi_re)
     assert lines == ["Common(name=Common, description=None)", "└── --verbose, -v ; type=bool"]
 
 
 def test_tree_option_on_command_shows_command_tree(
-    app: App, argv: Callable[..., None], capsys: pytest.CaptureFixture[str]
+    app: App, argv: Callable[..., None], capsys: pytest.CaptureFixture[str], ansi_re: re.Pattern[str]
 ) -> None:
     argv("login", "--tree")
-    lines = run_tree(app, capsys)
+    lines = run_tree(app, capsys, ansi_re)
     assert lines[0] == "Login(name=Login, description=None)"
     assert lines[1].startswith("└── --username, -u")
     assert not any("--run" in line for line in lines)
 
 
-def test_tree_option_skips_required_arguments(argv: Callable[..., None], capsys: pytest.CaptureFixture[str]) -> None:
+def test_tree_option_skips_required_arguments(
+    argv: Callable[..., None], capsys: pytest.CaptureFixture[str], ansi_re: re.Pattern[str]
+) -> None:
     argv("--tree")
-    assert run_tree(Login(), capsys)[0] == str(Login())
+    assert run_tree(Login(), capsys, ansi_re)[0] == str(Login())
 
 
 def test_group_does_not_override_parent_tree_option(
-    app: App, argv: Callable[..., None], capsys: pytest.CaptureFixture[str]
+    app: App, argv: Callable[..., None], capsys: pytest.CaptureFixture[str], ansi_re: re.Pattern[str]
 ) -> None:
     argv("--tree")
-    assert run_tree(app, capsys)[0].startswith("App(")
+    assert run_tree(app, capsys, ansi_re)[0].startswith("App(")
 
 
 def test_tree_option_is_listed_once_in_help(

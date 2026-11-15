@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import sys
 from typing import Callable
 
@@ -16,3 +17,8 @@ def argv(monkeypatch: pytest.MonkeyPatch) -> Callable[..., None]:
         monkeypatch.setattr(sys, "argv", ["prog", *args])
 
     return _set
+
+
+@pytest.fixture
+def ansi_re() -> re.Pattern[str]:
+    return re.compile(r"\x1b\[[0-9;]*m")
