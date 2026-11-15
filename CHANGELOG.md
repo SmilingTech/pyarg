@@ -1,3 +1,11 @@
+# [1.6.0](https://github.com/SmilingTech/pyarg/compare/v1.5.0...v1.6.0) (2026-11-15)
+
+
+### Features
+
+* Add extra methods and parameters to set up commands and add command to print the tree view. ([cc8f620](https://github.com/SmilingTech/pyarg/commit/cc8f620d7981a4265de6879429f1f0fab6b8535c))
+* Create a decorator that instantiate the PyArg easily. ([9a21a16](https://github.com/SmilingTech/pyarg/commit/9a21a165a1ec70b46cf677bf9c2b3e4fa990e3c1))
+
 # [1.5.0](https://github.com/SmilingTech/pyarg/compare/v1.4.0...v1.5.0) (2026-11-14)
 
 
